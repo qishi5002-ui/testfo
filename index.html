@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>XeinStore - Digital Game Codes</title>
+<style>
+* {box-sizing:border-box;margin:0;padding:0;}
+body {font-family:'Segoe UI',system-ui,sans-serif; background:linear-gradient(135deg,#667eea,#764ba2); min-height:100vh; color:#222;}
+.header {background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); padding:1rem 2rem; display:flex; justify-content:space-between; align-items:center;}
+.logo {font-size:1.6rem; font-weight:700; background:linear-gradient(45deg,#667eea,#764ba2); -webkit-background-clip:text; -webkit-text-fill-color:transparent;}
+.cart-btn {background:#667eea; color:#fff; border:none; padding:.6rem 1rem; border-radius:20px; cursor:pointer; font-weight:600; display:flex; gap:.5rem; align-items:center;}
+.cart-count {background:#ff4757; color:white; border-radius:50%; padding:.15rem .45rem; font-size:.8rem;}
+.container {max-width:1200px; margin:1.5rem auto; padding:1rem;}
+.hero {text-align:center; color:white; margin-bottom:1.5rem;}
+.hero h1 {font-size:2.4rem; text-shadow:2px 2px 4px rgba(0,0,0,0.25); margin-bottom:.3rem;}
+.products-grid {display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1.25rem;}
+.product-card {background: rgba(255,255,255,0.95); border-radius:12px; overflow:hidden; box-shadow:0 8px 25px rgba(0,0,0,0.08); transition:transform .18s;}
+.product-card:hover {transform: translateY(-6px);}
+.product-image {height:150px; display:flex; align-items:center; justify-content:center; font-size:3rem; color:white; background: linear-gradient(45deg,#667eea,#764ba2);}
+.product-info {padding:1rem;}
+.product-title {font-weight:700; color:#2d3748; margin-bottom:.35rem;}
+.product-platform {color:#667eea; margin-bottom:.6rem;}
+.duration-selector select {width:100%; padding:.45rem; border-radius:6px; border:1px solid #e6eef8; margin-bottom:.5rem;}
+.duration-price {color:#667eea; font-weight:700; margin-bottom:.6rem;}
+.add-to-cart {width:100%; padding:.6rem; border-radius:8px; background:#667eea; color:white; border:none; cursor:pointer; font-weight:700;}
+
+/* Cart & Checkout */
+.cart-sidebar {position:fixed; right:-420px; top:0; width:420px; height:100vh; background:white; box-shadow:-5px 0 20px rgba(0,0,0,.12); transition:right .28s; z-index:900; overflow-y:auto;}
+.cart-sidebar.open {right:0;}
+.cart-header {padding:1rem; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;}
+.close-cart {background:none; border:none; font-size:1.3rem; cursor:pointer;}
+.cart-items {padding:1rem;}
+.cart-item {display:flex; justify-content:space-between; gap:10px; padding:.75rem 0; border-bottom:1px solid #f1f3f5; align-items:center;}
+.cart-total {padding:1rem; border-top:2px solid #eee; font-weight:800; font-size:1.05rem;}
+.checkout-btn {width:100%; padding:1rem; border-radius:10px; background:#00d4aa; color:white; border:none; font-weight:800; cursor:pointer; margin-top:.8rem;}
+
+/* Modal */
+.modal-backdrop {position:fixed; inset:0; background: rgba(0,0,0,0.55); display:none; align-items:center; justify-content:center; z-index:10000; padding:1rem;}
+.modal-backdrop.open {display:flex;}
+.modal {width:100%; max-width:720px; background:white; border-radius:12px; overflow:auto; max-height:90vh;}
+.modal-header {padding:1rem; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;}
+.modal-body {padding:1rem;}
+.field {margin-bottom:.6rem;}
+input[type="text"] {width:100%; padding:.6rem; border-radius:8px; border:1px solid #e6edf7;}
+.btn {padding:.6rem .9rem; border-radius:8px; border:none; cursor:pointer;}
+.btn-primary {background:#667eea; color:white; font-weight:700;}
+.btn-success {background:#00d4aa; color:white; font-weight:800;}
+.notification {position:fixed; bottom:20px; left:20px; background:#00d4aa; color:white; padding:.75rem 1rem; border-radius:6px; z-index:10000; display:none;}
+
+/* Receipt page */
+#receipt-content {padding:1rem; font-family:monospace; line-height:1.5; background:#f8f8f8; border-radius:10px; margin-top:1rem;}
+</style>
+</head>
+<body>
+
+<header class="header">
+    <div class="logo">🎮 XeinStore</div>
+    <button class="cart-btn" onclick="toggleCart()">Cart <span class="cart-count" id="cart-count">0</span></button>
+</header>
+
+<main class="container" id="store-page">
+    <div class="hero">
+        <h1>Digital Game Codes</h1>
+        <p>Instant delivery • USDT (TRC20) • Best prices</p>
+    </div>
+
+    <div class="products-grid" id="products-grid"></div>
+</main>
+
+<!-- Cart Sidebar -->
+<aside class="cart-sidebar" id="cart-sidebar">
+    <div class="cart-header">
+        <h3>Shopping Cart</h3>
+        <button class="close-cart" onclick="toggleCart()">×</button>
+    </div>
+    <div class="cart-items" id="cart-items"><p style="text-align:center; color:#666;">Your cart is empty</p></div>
+    <div class="cart-total" id="cart-total" style="display:none;"></div>
+    <div style="padding:1rem;">
+        <button id="checkout-btn" class="checkout-btn" style="display:none;" onclick="openCheckout()">Checkout</button>
+    </div>
+</aside>
+
+<!-- Checkout Modal -->
+<div class="modal-backdrop" id="checkout-modal">
+    <div class="modal">
+        <div class="modal-header">
+            <h3>Checkout</h3>
+            <button class="btn" onclick="closeCheckout()">Close</button>
+        </div>
+        <div class="modal-body">
+            <div class="field">
+                <label>Telegram Username</label>
+                <input type="text" id="telegram-username" placeholder="@username"/>
+            </div>
+            <p style="font-weight:bold; color:#ff4757;">NOTE: Please be reminded to screenshot your crypto payment</p>
+            <button class="btn btn-success" onclick="confirmPayment()">I Paid</button>
+        </div>
+    </div>
+</div>
+
+<!-- Receipt Page -->
+<main class="container" id="receipt-page" style="display:none;">
+    <h2>Receipt</h2>
+    <div id="receipt-content"></div>
+    <button class="btn btn-primary" onclick="downloadReceipt()">Download Receipt</button>
+</main>
+
+<div class="notification" id="recent-purchase"></div>
+
+<script>
+// ---------- PRODUCTS ----------
+const products = [
+    {
+        id:1,
+        title:"Xein Pubg Key",
+        platform:"Digital Key",
+        pricing:{
+            "1_day": {price:5.00},
+            "3_days": {price:8.00},
+            "7_days": {price:12.00},
+            "30_days": {price:23.00}
+        },
+        icon:"🎯"
+    },
+    {
+        id:2,
+        title:"Xein Delta Force Key",
+        platform:"Digital Key",
+        pricing:{
+            "1_day": {price:4.00},
+            "3_days": {price:7.00},
+            "7_days": {price:11.00},
+            "30_days": {price:22.00}
+        },
+        icon:"⚡"
+    }
+];
+
+// ---------- CART ----------
+let cart = [];
+const WALLET_ADDRESS = "TEwKbkNdXqvNUG951nYTCRF6UjLGBn7pqc";
+
+function renderProducts(){
+    const grid = document.getElementById('products-grid');
+    grid.innerHTML='';
+    products.forEach(p=>{
+        let options='';
+        for(const key in p.pricing){
+            const label = key.replace(/_/g,' ').replace(/\b\w/g,l=>l.toUpperCase());
+            options+=`<option value="${key}">${label} - $${p.pricing[key].price}</option>`;
+        }
+        const card = document.createElement('div');
+        card.className='product-card';
+        card.innerHTML=`
+            <div class="product-image">${p.icon}</div>
+            <div class="product-info">
+                <div class="product-title">${p.title}</div>
+                <div class="product-platform">${p.platform}</div>
+                <div class="duration-selector">
+                    <select id="duration-${p.id}" onchange="updatePrice(${p.id})">
+                        ${options}
+                    </select>
+                    <div class="duration-price" id="price-${p.id}">$${p.pricing['1_day'].price} USDT</div>
+                </div>
+                <button class="add-to-cart" onclick="addToCart(${p.id})">Add to Cart</button>
+            </div>
+        `;
+        grid.appendChild(card);
+    });
+}
+
+function updatePrice(id){
+    const p = products.find(x=>x.id===id);
+    const select = document.getElementById(`duration-${id}`);
+    document.getElementById(`price-${id}`).textContent=`$${p.pricing[select.value].price} USDT`;
+}
+
+function addToCart(id){
+    const p = products.find(x=>x.id===id);
+    const select = document.getElementById(`duration-${id}`);
+    const duration = select.value;
+    const price = p.pricing[duration].price;
+    const existing = cart.find(i=>i.id===id && i.duration===duration);
+    if(existing) existing.quantity++;
+    else cart.push({id,p:title,p.title,durationLabel:duration,duration,price,quantity:1});
+    updateCartUI();
+}
+
+function updateCartUI(){
+    const count = document.getElementById('cart-count');
+    const itemsEl = document.getElementById('cart-items');
+    const totalEl = document.getElementById('cart-total');
+    const btn = document.getElementById('checkout-btn');
+    const totalQty = cart.reduce((s,i)=>s+i.quantity,0);
+    const totalPrice = cart.reduce((s,i)=>s+i.price*i.quantity,0);
+    count.textContent=totalQty;
+    if(cart.length===0){
+        itemsEl.innerHTML='<p style="text-align:center; color:#666;">Your cart is empty</p>';
+        totalEl.style.display='none';
+        btn.style.display='none';
+    } else {
+        let html='';
+        cart.forEach(i=>{
+            html+=`
+            <div class="cart-item">
+                <div style="flex:1;">
+                    <div style="font-weight:700;">${i.title}</div>
+                    <div style="font-size:.9rem;color:#667eea;">${i.durationLabel} - $${i.price} each x${i.quantity}</div>
+                </div>
+                <div style="display:flex;flex-direction:column;gap:.4rem;">
+                    <button onclick="decreaseQty(${i.id},'${i.duration}')">−</button>
+                    <button onclick="increaseQty(${i.id},'${i.duration}')">+</button>
+                    <button onclick="removeFromCart(${i.id},'${i.duration}')" style="background:#ff4757;color:white;">Remove</button>
+                </div>
+            </div>`;
+        });
+        itemsEl.innerHTML=html;
+        totalEl.style.display='block';
+        totalEl.textContent=`Total: $${totalPrice.toFixed(2)} USDT`;
+        btn.style.display='block';
+    }
+}
+
+function decreaseQty(id,dur){ const idx=cart.findIndex(i=>i.id===id && i.duration===dur); if(idx>-1){ cart[idx].quantity=Math.max(1,cart[idx].quantity-1); updateCartUI(); } }
+function increaseQty(id,dur){ const idx=cart.findIndex(i=>i.id===id && i.duration===dur); if(idx>-1){ cart[idx].quantity++; updateCartUI(); } }
+function removeFromCart(id,dur){ cart=cart.filter(i=>!(i.id===id && i.duration===dur)); updateCartUI(); }
+
+function toggleCart(){document.getElementById('cart-sidebar').classList.toggle('open');}
+
+// ---------- CHECKOUT ----------
+let currentReceipt = null;
+function openCheckout(){document.getElementById('checkout-modal').classList.add('open');}
+function closeCheckout(){document.getElementById('checkout-modal').classList.remove('open');}
+
+function confirmPayment(){
+    const username = document.getElementById('telegram-username').value.trim();
+    if(!username) return alert('Enter your Telegram username');
+    // generate receipt
+    const orderId = 'XSN'+Date.now();
+    const total = cart.reduce((s,i)=>s+i.price*i.quantity,0);
+    currentReceipt={orderId,telegramUsername:username,items:[...cart],total,status:'awaiting verification',wallet:WALLET_ADDRESS};
+    // hide store + checkout
+    document.getElementById('store-page').style.display='none';
+    document.getElementById('checkout-modal').classList.remove('open');
+    document.getElementById('receipt-page').style.display='block';
+    renderReceipt();
+    cart=[];
+    updateCartUI
+    // ---------- RECEIPT ----------
+function renderReceipt(){
+    if(!currentReceipt) return;
+    let html=`Order ID: ${currentReceipt.orderId}\nTelegram: ${currentReceipt.telegramUsername}\nWallet: ${currentReceipt.wallet}\n\nItems:\n`;
+    currentReceipt.items.forEach(i=>{
+        html+=`- ${i.title} (${i.durationLabel}) x${i.quantity} : $${(i.price*i.quantity).toFixed(2)}\n`;
+    });
+    html+=`\nTotal: $${currentReceipt.total.toFixed(2)} USDT\nStatus: ${currentReceipt.status}\n\nNOTE: Please send BOTH screenshots of your crypto payment and your receipt to @cocomelonqueen`;
+    document.getElementById('receipt-content').textContent = html;
+}
+
+// ---------- DOWNLOAD RECEIPT ----------
+function downloadReceipt(){
+    if(!currentReceipt) return;
+    const blob = new Blob([document.getElementById('receipt-content').textContent], {type:'text/plain'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${currentReceipt.orderId}_receipt.txt`;
+    a.click();
+}
+
+// ---------- RECENT PURCHASE NOTIFICATIONS ----------
+const sampleUsernames = ["@gamer123","@noobkiller","@legendX","@proplayer","@fastshot","@trickster","@shadowfox"];
+function showRecentPurchase(){
+    const notif = document.getElementById('recent-purchase');
+    const username = sampleUsernames[Math.floor(Math.random()*sampleUsernames.length)];
+    const minutesAgo = Math.floor(Math.random()*59)+1;
+    const hoursAgo = Math.floor(Math.random()*5);
+    const timeText = hoursAgo>0? `${hoursAgo}h ago`:`${minutesAgo}m ago`;
+    const product = products[Math.floor(Math.random()*products.length)];
+    notif.textContent = `${username} just purchased ${product.title} (${Object.keys(product.pricing)[Math.floor(Math.random()*Object.keys(product.pricing).length)].replace(/_/g,' ')}) - ${timeText}`;
+    notif.style.display='block';
+    setTimeout(showRecentPurchase, (Math.random()*10000)+5000); // random interval 5-15s
+}
+
+// ---------- INIT ----------
+renderProducts();
+showRecentPurchase();
+</script>
+</body>
+</html>
